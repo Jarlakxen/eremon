@@ -51,7 +51,9 @@ val scalametaV              = "1.7.0"
 val catsV                   = "0.9.0"
 val circeV                  = "0.8.0"
 val slf4JV                  = "1.7.25"
-val spec2V                  = "3.9.0"
+val vLogback                = "1.2.3"
+val vDockerKit              = "0.9.3"
+val spec2V                  = "3.9.1"
 val jUnitV                  = "4.12"
 
 val reactiveMongoDependancies =  Seq(
@@ -59,10 +61,13 @@ val reactiveMongoDependancies =  Seq(
 )
 
 val loggingDependancies =  Seq(
-  "org.slf4j"                     %  "slf4j-api"                          % slf4JV
+  "org.slf4j"                     %  "slf4j-api"                          % slf4JV,
+  "ch.qos.logback"                %  "logback-classic"                    % vLogback          %  "test"
 )
 
 val testDependancies =  Seq(
+  "com.whisk"                     %% "docker-testkit-specs2"              % vDockerKit        %  "test", 
+  "com.whisk"                     %% "docker-testkit-impl-spotify"        % vDockerKit        %  "test",
   "org.specs2"                    %% "specs2-mock"                        % spec2V            %  "test",
   "org.specs2"                    %% "specs2-junit"                       % spec2V            %  "test",
   "junit"                         %  "junit"                              % jUnitV            %  "test"

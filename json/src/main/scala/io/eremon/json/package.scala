@@ -58,7 +58,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
         double <- {
           number.toInt match {
             case Some(_) => None
-            case None    => Some(number.toDouble)
+            case None => Some(number.toDouble)
           }
         }
       } yield Right(BSONDouble(double))
@@ -66,14 +66,14 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
   implicit object BSONDoubleEncoder extends PartialEncoder[BSONDouble] {
     private val jsNaN = {
-        @SuppressWarnings(Array("LooksLikeInterpolatedString"))
-        @inline def json = Json.obj(f"$$double" -> Json.fromString("NaN"))
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
+      @inline def json = Json.obj(f"$$double" -> Json.fromString("NaN"))
       json
     }
 
     val partial: PartialFunction[BSONValue, Json] = {
       case BSONDouble(v) if v.isNaN => jsNaN
-      case BSONDouble(v)            => Json.fromDouble(v).get
+      case BSONDouble(v) => Json.fromDouble(v).get
     }
   }
 
@@ -217,12 +217,12 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
         .foldLeft(init) {
           case (Right(acc), (field, Right(bson))) => Right(acc :+ (field -> bson))
           case (Right(acc), (field, Left(error))) => Left(List(error))
-          case (Left(acc), (field, Right(bson)))  => Left(acc)
-          case (Left(acc), (field, Left(error)))  => Left(acc :+ error)
+          case (Left(acc), (field, Right(bson))) => Left(acc)
+          case (Left(acc), (field, Left(error))) => Left(acc :+ error)
         }
-      result match {
+      (result: @unchecked) match {
         case Right(fieldsAndValues) => Right(BSONDocument(fieldsAndValues))
-        case Left(error :: errors)  => Left(error)
+        case Left(error :: errors) => Left(error)
       }
     }
 
@@ -289,12 +289,14 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       case ts: BSONTimestamp => Json.obj(
         f"$$time" -> Json.fromLong(ts.value >>> 32), f"$$i" -> Json.fromInt(ts.value.toInt),
         f"$$timestamp" -> Json.obj(
-          "t" -> Json.fromLong(ts.value >>> 32), "i" -> Json.fromInt(ts.value.toInt)))
+          "t" -> Json.fromLong(ts.value >>> 32), "i" -> Json.fromInt(ts.value.toInt)
+        )
+      )
     }
   }
 
   implicit object BSONArrayDecoder extends PartialDecoder[BSONArray] {
-	  import cats.instances.either._
+    import cats.instances.either._
     import cats.instances.list._
     import cats.syntax.traverse._
 
@@ -313,7 +315,8 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
   @SuppressWarnings(Array("MaxParameters"))
   def readAsBSONValue(json: Json)(
-    implicit string: PartialDecoder[BSONString],
+    implicit
+    string: PartialDecoder[BSONString],
     objectID: PartialDecoder[BSONObjectID],
     // javascript: PartialDecoder[BSONJavaScript],
     dateTime: PartialDecoder[BSONDateTime],
@@ -330,7 +333,8 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     // symbol: PartialDecoder[BSONSymbol],
     array: PartialDecoder[BSONArray],
     doc: PartialDecoder[BSONDocument],
-    undef: PartialDecoder[BSONUndefined.type]): Decoder.Result[BSONValue] =
+    undef: PartialDecoder[BSONUndefined.type]
+  ): Decoder.Result[BSONValue] =
 
     Seq(
       string.partial,
@@ -349,19 +353,21 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       // symbol,
       array.partial,
       doc.partial,
-      undef.partial).foldLeft(Option.empty[Decoder.Result[BSONValue]]) {
-        case (result @ Some(_), _) => result
-        case (None, partial)       => partial(json)
-      } match {
-        case Some(result) => result
-        case None         => Left(DecodingFailure(s"unhandled json value: $json", Nil))
-      }
+      undef.partial
+    ).foldLeft(Option.empty[Decoder.Result[BSONValue]]) {
+      case (result @ Some(_), _) => result
+      case (None, partial) => partial(json)
+    } match {
+      case Some(result) => result
+      case None => Left(DecodingFailure(s"unhandled json value: $json", Nil))
+    }
 
   def toJSON(bson: BSONValue): Json = writeAsJsValue(bson)
 
   @SuppressWarnings(Array("MaxParameters"))
   def writeAsJsValue(bson: BSONValue)(
-    implicit string: PartialEncoder[BSONString],
+    implicit
+    string: PartialEncoder[BSONString],
     objectID: PartialEncoder[BSONObjectID],
     // javascript: PartialEncoder[BSONJavaScript],
     dateTime: PartialEncoder[BSONDateTime],
@@ -378,7 +384,8 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     // symbol: PartialEncoder[BSONSymbol],
     array: PartialEncoder[BSONArray],
     doc: PartialEncoder[BSONDocument],
-    undef: PartialEncoder[BSONUndefined.type]): Json = string.partial.
+    undef: PartialEncoder[BSONUndefined.type]
+  ): Json = string.partial.
     orElse(objectID.partial).
     // orElse(javascript.partial).
     orElse(dateTime.partial).
@@ -397,7 +404,8 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     orElse(doc.partial).
     orElse(undef.partial).
     lift(bson).getOrElse(
-      throw new json.JSONException(s"Unhandled json value: $bson"))
+      throw new json.JSONException(s"Unhandled json value: $bson")
+    )
 }
 
 object ImplicitBSONHandlers extends ImplicitBSONHandlers
@@ -433,9 +441,9 @@ sealed trait LowerImplicitBSONHandlers {
   import reactivemongo.bson.{ BSONElement, Producer }
 
   implicit def jsWriter[A <: Json, B <: BSONValue] = BSONWriter[A, B] { js =>
-    BSONFormats.toBSON(js) match {
+    (BSONFormats.toBSON(js): @unchecked) match {
       case Right(b: B @unchecked) => b
-      case Left(error)            => sys.error(s"fails to convert to BSON: $error")
+      case Left(error) => sys.error(s"fails to convert to BSON: $error")
     }
   }
 

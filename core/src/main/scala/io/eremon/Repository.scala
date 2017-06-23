@@ -11,19 +11,16 @@ import reactivemongo.api.indexes.Index
 import reactivemongo.bson.{ BSONDocument, BSONDocumentReader, BSONDocumentWriter }
 import reactivemongo.core.errors.GenericDatabaseException
 
-abstract class ReactiveRepository[A <: Any, ID <: Any](
-  database: MongoDB,
-  collectionName: String,
-  idReader: BSONDocumentReader[ID],
-  idWriter: BSONDocumentWriter[ID],
-  entityReader: BSONDocumentReader[A],
-  entityWriter: BSONDocumentWriter[A],
-  executionContext: ExecutionContext)(implicit atag: ClassTag[A], idtag: ClassTag[ID]) {
+abstract class ReactiveRepository[A <: Any](
+    database: MongoDB,
+    collectionName: String,
+    entityReader: BSONDocumentReader[A],
+    entityWriter: BSONDocumentWriter[A],
+    executionContext: ExecutionContext
+)(implicit atag: ClassTag[A], idtag: ClassTag[ID]) {
   import ReactiveRepository._
 
   private implicit val ec = executionContext
-  private implicit val idReaderImplicit = idReader
-  private implicit val idWriterImplicit = idWriter
   private implicit val entityReaderImplicit = entityReader
   private implicit val entityWriterImplicit = entityWriter
 
@@ -134,7 +131,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](
       instance <- collection.instance()
       result <- instance.indexesManager.create(index).flatMap {
         case wr if !wr.ok => Future.failed(new GenericDatabaseException(wr.writeErrors.map(_.errmsg).mkString(", "), wr.code))
-        case wr           => Future.successful(wr.ok)
+        case wr => Future.successful(wr.ok)
       }
     } yield result
 
