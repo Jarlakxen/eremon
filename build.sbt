@@ -19,6 +19,16 @@ lazy val compilerOptions = Seq(
   "-Xfuture"
 )
 
+// ··· Project Repositories ···
+
+val nexusHost = sys.props.get("NEXUS_HOST").getOrElse("nexus.cluster.fravega.com")
+
+val realm = sys.props.get("NEXUS_REALM").getOrElse("Sonatype Nexus Repository Manager")
+
+val nexusUrl = s"https://$nexusHost/repository"
+
+// ··· Project Settings ···
+
 lazy val commonSettings = Seq(
   organization := "io.eremon",
   scalaVersion := scalaVersions.head,
@@ -42,6 +52,19 @@ lazy val commonSettings = Seq(
     Resolver.sonatypeRepo("releases"),
     Resolver.sonatypeRepo("snapshots")
   ),
+  publishTo := {
+    if (isSnapshot.value)
+      Some("snapshots" at nexusUrl + "/maven-snapshots/")
+    else
+      Some("releases"  at nexusUrl + "/maven-releases/")
+  },
+  publishMavenStyle := true,
+  credentials += {
+    (sys.props.get("NEXUS_USER"), sys.props.get("NEXUS_PWD")) match {
+      case (Some(u), Some(p)) => Credentials(realm, nexusHost, u, p)
+      case _                  => Credentials(Path.userHome / ".sbt" / ".credentials")
+    }
+  },
   fork in (Test,run) := false,
   parallelExecution in Test := false
 )
