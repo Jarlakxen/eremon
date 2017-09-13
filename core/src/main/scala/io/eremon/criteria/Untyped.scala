@@ -8,7 +8,7 @@ import scala.language.dynamics
  * using this abstraction.
  */
 sealed trait Untyped
-    extends Dynamic {
+  extends Dynamic {
   def selectDynamic(field: String): Term[Any] = Term[Any](field);
 }
 

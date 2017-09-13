@@ -44,46 +44,44 @@ package object criteria {
     }
 
   implicit object DateTimeValue
-      extends ValueBuilder[java.util.Date] {
+    extends ValueBuilder[java.util.Date] {
     override def bson(v: java.util.Date): BSONValue = BSONDateTime(
-      v.getTime
-    );
+      v.getTime);
   }
 
   implicit object BooleanValue
-      extends ValueBuilder[Boolean] {
+    extends ValueBuilder[Boolean] {
     override def bson(v: Boolean): BSONValue = BSONBoolean(v);
   }
 
   implicit object DoubleValue
-      extends ValueBuilder[Double] {
+    extends ValueBuilder[Double] {
     override def bson(v: Double): BSONValue = BSONDouble(v);
   }
 
   implicit object IntValue
-      extends ValueBuilder[Int] {
+    extends ValueBuilder[Int] {
     override def bson(v: Int): BSONValue = BSONInteger(v);
   }
 
   implicit object LongValue
-      extends ValueBuilder[Long] {
+    extends ValueBuilder[Long] {
     override def bson(v: Long): BSONValue = BSONLong(v);
   }
 
   implicit object StringValue
-      extends ValueBuilder[String] {
+    extends ValueBuilder[String] {
     override def bson(v: String): BSONValue = BSONString(v);
   }
 
   implicit object SymbolValue
-      extends ValueBuilder[Symbol] {
+    extends ValueBuilder[Symbol] {
     override def bson(v: Symbol): BSONValue = BSONSymbol(v.name);
   }
 
   implicit object TimestampValue
-      extends ValueBuilder[java.sql.Timestamp] {
+    extends ValueBuilder[java.sql.Timestamp] {
     override def bson(v: java.sql.Timestamp): BSONValue = BSONTimestamp(
-      v.getTime
-    );
+      v.getTime);
   }
 }

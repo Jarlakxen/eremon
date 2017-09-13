@@ -3,23 +3,10 @@ package io.eremon
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
 
-import org.specs2.mutable.Specification
 import org.slf4j._
 import com.whisk.docker._
-import com.whisk.docker.impl.spotify.DockerKitSpotify
 
 object test {
-
-  /**
-   * DockerKit with default configuration for project running on Fravega infrastructure
-   *
-   * It uses the Docker client from Spotify to drive Docker and extends the server startup.
-   *
-   * @author carlos.fau
-   */
-  trait DockerTestKit extends DockerKitSpotify with com.whisk.docker.specs2.DockerTestKit {
-    override val StartContainersTimeout: FiniteDuration = 1.minute
-  }
 
   /**
    * A definition to start a MongoDB isntance inside a Docker container to be used in tests.
@@ -29,11 +16,8 @@ object test {
    *
    * https://github.com/whisklabs/docker-it-scala/blob/master/config/src/test/resources/application.conf
    *
-   *
-   * @author carlosl.fau
    */
-  trait DockerMongoDBTestKit extends DockerTestKit {
-    self: Specification =>
+  trait DockerMongoDBTestKit extends DockerKit {
 
     implicit val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -63,8 +47,7 @@ object test {
         }
         _ <- db.instance()
       } yield db),
-      10 seconds
-    )
+      10 seconds)
 
     protected def clean(db: MongoDB) = Await.ready(db.instance().flatMap(_.drop()), 10 seconds)
 

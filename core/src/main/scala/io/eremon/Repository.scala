@@ -12,12 +12,11 @@ import reactivemongo.bson.{ BSONDocument, BSONDocumentReader, BSONDocumentWriter
 import reactivemongo.core.errors.GenericDatabaseException
 
 abstract class ReactiveRepository[A <: Any](
-    database: MongoDB,
-    collectionName: String,
-    entityReader: BSONDocumentReader[A],
-    entityWriter: BSONDocumentWriter[A],
-    executionContext: ExecutionContext
-)(implicit atag: ClassTag[A], idtag: ClassTag[ID]) {
+  database: MongoDB,
+  collectionName: String,
+  entityReader: BSONDocumentReader[A],
+  entityWriter: BSONDocumentWriter[A],
+  executionContext: ExecutionContext)(implicit atag: ClassTag[A], idtag: ClassTag[ID]) {
   import ReactiveRepository._
 
   private implicit val ec = executionContext
@@ -68,9 +67,12 @@ abstract class ReactiveRepository[A <: Any](
     findById(id, Some(readPreference))
 
   def findById(id: ID, readPreference: Option[ReadPreference] = None): Future[Option[A]] =
+    findOne($id(id))
+
+  def findOne(query: BSONDocument, readPreference: Option[ReadPreference] = None): Future[Option[A]] =
     for {
       instance <- collection.instance()
-      result <- instance.find($id(id)).one[A](readPreference.getOrElse(defaultReadPreference))
+      result <- instance.find(query).one[A](readPreference.getOrElse(defaultReadPreference))
     } yield result
 
   def count: Future[Int] =

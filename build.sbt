@@ -1,7 +1,7 @@
 
 // ··· Project Options ···
 
-val scalaVersions = Seq("2.12.2", "2.11.11")
+val scalaVersions = Seq("2.12.3")
 
 lazy val compilerOptions = Seq(
   "-deprecation",
@@ -42,35 +42,31 @@ lazy val commonSettings = Seq(
     Resolver.sonatypeRepo("releases"),
     Resolver.sonatypeRepo("snapshots")
   ),
-  fork in (Test,run) := false
+  fork in (Test,run) := false,
+  parallelExecution in Test := false
 )
 
 // ··· Project Dependancies ···
-val reactivemongoV          = "0.12.3"
-val scalametaV              = "1.7.0"
-val catsV                   = "0.9.0"
-val circeV                  = "0.8.0"
-val slf4JV                  = "1.7.25"
-val vLogback                = "1.2.3"
-val vDockerKit              = "0.9.3"
-val spec2V                  = "3.9.1"
-val jUnitV                  = "4.12"
+val reactivemongoV  = "0.12.6"
+val circeV          = "0.8.0"
+val slf4JV          = "1.7.25"
+val vLogback        = "1.2.3"
+val vDockerKit      = "0.9.5"
+val scalatestV     	= "3.0.4"
 
 val reactiveMongoDependancies =  Seq(
-  "org.reactivemongo"             %% "reactivemongo"                      % reactivemongoV    % "provided"
+  "org.reactivemongo"     %% "reactivemongo"                      % reactivemongoV    % "provided"
 )
 
 val loggingDependancies =  Seq(
-  "org.slf4j"                     %  "slf4j-api"                          % slf4JV,
-  "ch.qos.logback"                %  "logback-classic"                    % vLogback          %  "test"
+  "org.slf4j"             %  "slf4j-api"                          % slf4JV,
+  "ch.qos.logback"        %  "logback-classic"                    % vLogback          %  Test
 )
 
 val testDependancies =  Seq(
-  "com.whisk"                     %% "docker-testkit-specs2"              % vDockerKit        %  "test", 
-  "com.whisk"                     %% "docker-testkit-impl-spotify"        % vDockerKit        %  "test",
-  "org.specs2"                    %% "specs2-mock"                        % spec2V            %  "test",
-  "org.specs2"                    %% "specs2-junit"                       % spec2V            %  "test",
-  "junit"                         %  "junit"                              % jUnitV            %  "test"
+  "com.whisk"             %% "docker-testkit-scalatest"           % vDockerKit        %  Test, 
+  "com.whisk"             %% "docker-testkit-impl-spotify"        % vDockerKit        %  Test,
+  "org.scalatest"         %% "scalatest"                          % scalatestV        %  Test
 )
 
 val baseDependancies = reactiveMongoDependancies ++ loggingDependancies ++ testDependancies
@@ -84,7 +80,7 @@ lazy val core = (project in file("core"))
       name := "eremon-core",
       libraryDependencies ++= baseDependancies ++ Seq(
         // --- Utils --
-        "org.scala-lang"                %  "scala-reflect"                      % scalaVersion.value
+        "org.scala-lang"  %  "scala-reflect"                      % scalaVersion.value
       )
     )
   )
@@ -96,9 +92,9 @@ lazy val json = (project in file("json"))
       name := "eremon-json",
       libraryDependencies ++= baseDependancies ++ Seq(
         // --- Utils ---
-        "io.circe"                      %% "circe-generic"                      % circeV,
-        "io.circe"                      %% "circe-parser"                       % circeV,
-        "io.circe"                      %% "circe-optics"                       % circeV
+        "io.circe"        %% "circe-generic"                      % circeV,
+        "io.circe"        %% "circe-parser"                       % circeV,
+        "io.circe"        %% "circe-optics"                       % circeV
       )
     )
   )

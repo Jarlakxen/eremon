@@ -289,9 +289,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       case ts: BSONTimestamp => Json.obj(
         f"$$time" -> Json.fromLong(ts.value >>> 32), f"$$i" -> Json.fromInt(ts.value.toInt),
         f"$$timestamp" -> Json.obj(
-          "t" -> Json.fromLong(ts.value >>> 32), "i" -> Json.fromInt(ts.value.toInt)
-        )
-      )
+          "t" -> Json.fromLong(ts.value >>> 32), "i" -> Json.fromInt(ts.value.toInt)))
     }
   }
 
@@ -333,8 +331,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     // symbol: PartialDecoder[BSONSymbol],
     array: PartialDecoder[BSONArray],
     doc: PartialDecoder[BSONDocument],
-    undef: PartialDecoder[BSONUndefined.type]
-  ): Decoder.Result[BSONValue] =
+    undef: PartialDecoder[BSONUndefined.type]): Decoder.Result[BSONValue] =
 
     Seq(
       string.partial,
@@ -353,14 +350,13 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       // symbol,
       array.partial,
       doc.partial,
-      undef.partial
-    ).foldLeft(Option.empty[Decoder.Result[BSONValue]]) {
-      case (result @ Some(_), _) => result
-      case (None, partial) => partial(json)
-    } match {
-      case Some(result) => result
-      case None => Left(DecodingFailure(s"unhandled json value: $json", Nil))
-    }
+      undef.partial).foldLeft(Option.empty[Decoder.Result[BSONValue]]) {
+        case (result @ Some(_), _) => result
+        case (None, partial) => partial(json)
+      } match {
+        case Some(result) => result
+        case None => Left(DecodingFailure(s"unhandled json value: $json", Nil))
+      }
 
   def toJSON(bson: BSONValue): Json = writeAsJsValue(bson)
 
@@ -384,8 +380,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     // symbol: PartialEncoder[BSONSymbol],
     array: PartialEncoder[BSONArray],
     doc: PartialEncoder[BSONDocument],
-    undef: PartialEncoder[BSONUndefined.type]
-  ): Json = string.partial.
+    undef: PartialEncoder[BSONUndefined.type]): Json = string.partial.
     orElse(objectID.partial).
     // orElse(javascript.partial).
     orElse(dateTime.partial).
@@ -404,8 +399,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     orElse(doc.partial).
     orElse(undef.partial).
     lift(bson).getOrElse(
-      throw new json.JSONException(s"Unhandled json value: $bson")
-    )
+      throw new json.JSONException(s"Unhandled json value: $bson"))
 }
 
 object ImplicitBSONHandlers extends ImplicitBSONHandlers

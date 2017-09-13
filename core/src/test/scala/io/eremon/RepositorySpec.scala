@@ -1,48 +1,64 @@
 package io.eremon
 
-import scala.concurrent._
-import scala.concurrent.Await._
-import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 
-import org.junit.runner.RunWith
-import org.specs2.mutable.Specification
-import org.specs2.runner.JUnitRunner
-import org.specs2.specification.BeforeEach
-import org.specs2.specification.AfterAll
+import org.scalatest.time.{ Second, Seconds, Span }
+
+import com.whisk.docker.scalatest.DockerTestKit
+import com.whisk.docker.impl.spotify.DockerKitSpotify
 
 import test._
+import criteria._
 
 /**
  * Verifies the Repository behaves as expected
  */
-@RunWith(classOf[JUnitRunner])
-class RepositorySpec extends Specification with DockerMongoDBTestKit with BeforeEach with AfterAll {
+class RepositorySpec extends Spec
+  with DockerTestKit
+  with DockerKitSpotify
+  with DockerMongoDBTestKit {
   import RepositorySpec._
-  sequential
+
+  implicit val pc = PatienceConfig(Span(20, Seconds), Span(1, Second))
 
   lazy implicit val database = makeConnector
 
   lazy val testRepository = new TestRepository(database)
 
-  protected def before: Unit = {
+  before {
     clean(database)
   }
 
-  override def afterAll: Unit = {
-    super.afterAll()
+  override def afterAll(): Unit = {
     close(database)
+    super.afterAll()
+
   }
 
-  def sync[T](f: Future[T]): T =
-    result(f, 10 seconds)
+  "mongodb node" should "be ready with log line checker" in {
+    isContainerReady(mongodbContainer).futureValue shouldBe true
+    mongodbContainer.getPorts().futureValue.get(27017) should not be empty
+    mongodbContainer.getIpAddresses().futureValue should not be Seq.empty
+  }
 
-  "A reactive repository" should {
-    "insert, find and delete" in {
-      val id = ID.generate()
+  "A ReactiveRepository" should "support insertion and find by id" in {
+    val id = ID.generate()
+    testRepository.insert(Test("Linus Torvalds", 47, id)).map(_.ok).futureValue shouldBe true
+    testRepository.findById(id).futureValue shouldBe Some(Test("Linus Torvalds", 47, id))
+  }
 
-      sync(testRepository.insert(Test("Linus Torvalds", 47, id)).map(_.ok)) must beTrue
-      sync(testRepository.findById(id)) must beSome(Test("Linus Torvalds", 47, id))
-    }
+  it should "support deletion" in {
+    val id = ID.generate()
+    testRepository.insert(Test("Linus Torvalds", 47, id)).map(_.ok).futureValue shouldBe true
+    testRepository.removeById(id).map(_.ok).futureValue shouldBe true
+    testRepository.findById(id).futureValue shouldBe None
+  }
+
+  it should "support find by a field" in {
+    import Typed._
+    val id = ID.generate()
+    testRepository.insert(Test("Linus Torvalds", 47, id)).map(_.ok).futureValue shouldBe true
+    testRepository.findOne(criteria[Test](_.name) === "Linus Torvalds").futureValue shouldBe Some(Test("Linus Torvalds", 47, id))
   }
 }
 
@@ -60,8 +76,7 @@ object RepositorySpec {
     "test",
     testReader,
     testWriter,
-    ec
-  ) {
+    ec) {
 
   }
 
