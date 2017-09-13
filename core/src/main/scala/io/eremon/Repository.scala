@@ -98,16 +98,16 @@ abstract class ReactiveRepository[A <: Any](
     } yield result
   }
 
-  def removeAll(writeConcern: WriteConcern = WriteConcern.Default): Future[WriteResult] =
+  def removeAll(writeConcern: WriteConcern = WriteConcern.Default): Future[OperationSuccess.type] =
     remove(BSONDocument.empty, writeConcern)
 
-  def removeById(id: ID, writeConcern: WriteConcern = WriteConcern.Default): Future[WriteResult] =
+  def removeById(id: ID, writeConcern: WriteConcern = WriteConcern.Default): Future[OperationSuccess.type] =
     remove($id(id), writeConcern)
 
-  def remove(query: BSONDocument, writeConcern: WriteConcern = WriteConcern.Default): Future[WriteResult] =
+  def remove(query: BSONDocument, writeConcern: WriteConcern = WriteConcern.Default): Future[OperationSuccess.type] =
     for {
       instance <- collection.instance()
-      result <- instance.remove(query, writeConcern)
+      result <- track(instance.remove(query, writeConcern))
     } yield result
 
   def drop: Future[Boolean] =
@@ -116,10 +116,10 @@ abstract class ReactiveRepository[A <: Any](
       result <- instance.drop(false)
     } yield result
 
-  def insert(entity: A, writeConcern: WriteConcern = WriteConcern.Default): Future[WriteResult] =
+  def insert(entity: A, writeConcern: WriteConcern = WriteConcern.Default): Future[A] =
     for {
       instance <- collection.instance()
-      result <- instance.insert(entity, writeConcern)
+      result <- track(entity, instance.insert(_: A, writeConcern))
     } yield result
 
   def bulkInsert(entities: Traversable[A]): Future[MultiBulkWriteResult] =
@@ -128,13 +128,10 @@ abstract class ReactiveRepository[A <: Any](
       result <- instance.bulkInsert(entities.map(entityWriter.write(_)).toStream, false)
     } yield result
 
-  private def ensureIndex(index: Index): Future[Boolean] =
+  private def ensureIndex(index: Index): Future[OperationSuccess.type] =
     for {
       instance <- collection.instance()
-      result <- instance.indexesManager.create(index).flatMap {
-        case wr if !wr.ok => Future.failed(new GenericDatabaseException(wr.writeErrors.map(_.errmsg).mkString(", "), wr.code))
-        case wr => Future.successful(wr.ok)
-      }
+      result <- track(instance.indexesManager.create(index))
     } yield result
 
   def ensureIndexes: Future[Boolean] = {
@@ -156,7 +153,7 @@ abstract class ReactiveRepository[A <: Any](
               logger.error(s"Index ${idx.name.getOrElse(idx)} fail", ex)
           })
       }
-    } yield insertedIdx.forall(identity)
+    } yield insertedIdx.forall(_ == OperationSuccess)
   }
 
 }
@@ -166,4 +163,24 @@ object ReactiveRepository {
   protected val DuplicateKeyError = "E11000"
 
   class BulkInsertRejected extends Exception("No objects inserted. Error converting some or all to JSON")
+
+  private[ReactiveRepository] def track[T](entity: T, cmd: T => Future[WriteResult])(implicit ec: ExecutionContext): Future[T] =
+    cmd(entity).recoverWith {
+      case e => Future.failed(new RuntimeException(s"Got exception from MongoDB: ${e.getMessage}", e.getCause))
+    }.flatMap {
+      case wr if wr.ok =>
+        Future.successful(entity)
+      case wr =>
+        Future.failed(new GenericDatabaseException(wr.writeErrors.map(_.errmsg).mkString(", "), wr.code))
+    }
+
+  private[ReactiveRepository] def track(cmd: Future[WriteResult])(implicit ec: ExecutionContext): Future[OperationSuccess.type] =
+    cmd.recoverWith {
+      case e => Future.failed(new RuntimeException(s"Got exception from MongoDB: ${e.getMessage}", e.getCause))
+    }.flatMap {
+      case wr if wr.ok =>
+        Future.successful(OperationSuccess)
+      case wr =>
+        Future.failed(new GenericDatabaseException(wr.writeErrors.map(_.errmsg).mkString(", "), wr.code))
+    }
 }

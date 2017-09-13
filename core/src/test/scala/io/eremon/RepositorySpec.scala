@@ -43,21 +43,24 @@ class RepositorySpec extends Spec
 
   "A ReactiveRepository" should "support insertion and find by id" in {
     val id = ID.generate()
-    testRepository.insert(Test("Linus Torvalds", 47, id)).map(_.ok).futureValue shouldBe true
+    val entity = Test("Linus Torvalds", 47, id)
+    testRepository.insert(entity).futureValue shouldBe entity
     testRepository.findById(id).futureValue shouldBe Some(Test("Linus Torvalds", 47, id))
   }
 
   it should "support deletion" in {
     val id = ID.generate()
-    testRepository.insert(Test("Linus Torvalds", 47, id)).map(_.ok).futureValue shouldBe true
-    testRepository.removeById(id).map(_.ok).futureValue shouldBe true
+    val entity = Test("Linus Torvalds", 47, id)
+    testRepository.insert(entity).futureValue shouldBe entity
+    testRepository.removeById(id).futureValue shouldBe OperationSuccess
     testRepository.findById(id).futureValue shouldBe None
   }
 
   it should "support find by a field" in {
     import Typed._
     val id = ID.generate()
-    testRepository.insert(Test("Linus Torvalds", 47, id)).map(_.ok).futureValue shouldBe true
+    val entity = Test("Linus Torvalds", 47, id)
+    testRepository.insert(entity).futureValue shouldBe entity
     testRepository.findOne(criteria[Test](_.name) === "Linus Torvalds").futureValue shouldBe Some(Test("Linus Torvalds", 47, id))
   }
 }

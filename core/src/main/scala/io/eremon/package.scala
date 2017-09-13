@@ -46,4 +46,6 @@ package object eremon {
 
   }
 
+  case object OperationSuccess
+
 }
