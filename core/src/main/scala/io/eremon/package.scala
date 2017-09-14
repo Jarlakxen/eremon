@@ -5,7 +5,7 @@ import scala.util._
 
 import reactivemongo.api.{ DefaultDB, FailoverStrategy, MongoDriver, MongoConnection }
 import reactivemongo.api.collections.bson.BSONCollection
-import reactivemongo.bson.BSONObjectID
+import reactivemongo.bson._
 
 import eremon.exceptions._
 
@@ -47,5 +47,7 @@ package object eremon {
   }
 
   case object OperationSuccess
+
+  implicit def toBSONValue[T](value: T)(implicit w: BSONWriter[T, _ <: BSONValue]): BSONValue = w.write(value)
 
 }

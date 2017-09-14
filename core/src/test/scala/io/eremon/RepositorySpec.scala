@@ -72,12 +72,19 @@ class RepositorySpec extends Spec
   }
 
   it should "support $push to an entity" in {
-    import Typed._
     testRepository.insert(entity).futureValue shouldBe entity
     testRepository.count.futureValue shouldBe 1
     testRepository.updateById(id, $push("softwares", "Git")).futureValue shouldBe Some(entity.copy(softwares = Set("Linux", "Git")))
     testRepository.count.futureValue shouldBe 1
     testRepository.findById(id).futureValue shouldBe Some(entity.copy(softwares = Set("Linux", "Git")))
+  }
+
+  it should "support $pull to an entity" in {
+    testRepository.insert(entity).futureValue shouldBe entity
+    testRepository.count.futureValue shouldBe 1
+    testRepository.updateById(id, $pull("softwares", "Linux")).futureValue shouldBe Some(entity.copy(softwares = Set.empty))
+    testRepository.count.futureValue shouldBe 1
+    testRepository.findById(id).futureValue shouldBe Some(entity.copy(softwares = Set.empty))
   }
 }
 

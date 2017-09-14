@@ -6,6 +6,11 @@ trait UpdateOperation {
   def toDocument: BSONDocument
 }
 
+case class $pull[T](arrayField: String, criteria: BSONValue) extends UpdateOperation {
+  def toDocument: BSONDocument =
+    BSONDocument("$pull" -> BSONDocument(arrayField -> criteria))
+}
+
 case class $push[T](arrayField: String, value: T)(implicit w: BSONWriter[T, _ <: BSONValue]) extends UpdateOperation {
   def toDocument: BSONDocument =
     BSONDocument("$push" -> BSONDocument(arrayField -> w.write(value)))
