@@ -35,22 +35,22 @@ abstract class ReactiveRepository[A <: Any](
 
   protected def $id(id: ID) = BSONDocument(Id -> id)
 
-  def find(query: BSONDocument, opt: QueryOpt, sorting: BSONDocument): Future[List[A]] =
-    find(query, Some(opt), sorting, None)
+  def find(selector: BSONDocument, opt: QueryOpt, sorting: BSONDocument): Future[List[A]] =
+    find(selector, Some(opt), sorting, None)
 
-  def find(query: BSONDocument, readPreference: ReadPreference): Future[List[A]] =
-    find(query, None, BSONDocument.empty, Some(readPreference))
+  def find(selector: BSONDocument, readPreference: ReadPreference): Future[List[A]] =
+    find(selector, None, BSONDocument.empty, Some(readPreference))
 
-  def find(query: BSONDocument, opt: QueryOpt, sorting: BSONDocument, readPreference: ReadPreference): Future[List[A]] =
-    find(query, Some(opt), BSONDocument.empty, Some(readPreference))
+  def find(selector: BSONDocument, opt: QueryOpt, sorting: BSONDocument, readPreference: ReadPreference): Future[List[A]] =
+    find(selector, Some(opt), BSONDocument.empty, Some(readPreference))
 
-  def find(query: BSONDocument, opt: Option[QueryOpt] = None, sorting: BSONDocument, readPreference: Option[ReadPreference]): Future[List[A]] = {
+  def find(selector: BSONDocument, opt: Option[QueryOpt] = None, sorting: BSONDocument, readPreference: Option[ReadPreference]): Future[List[A]] = {
     val (skip, limit) = opt.map(opt => (opt.offset, opt.limit)).getOrElse((0, Int.MaxValue))
     val rp = readPreference.getOrElse(defaultReadPreference)
 
     for {
       instance <- collection.instance()
-      result <- instance.find(query).options(QueryOpts(skip, limit)).sort(sorting).cursor[A](rp).collect[List](limit, Cursor.FailOnError[List[A]]())
+      result <- instance.find(selector).options(QueryOpts(skip, limit)).sort(sorting).cursor[A](rp).collect[List](limit, Cursor.FailOnError[List[A]]())
     } yield result
   }
 
@@ -104,10 +104,10 @@ abstract class ReactiveRepository[A <: Any](
   def removeById(id: ID, writeConcern: WriteConcern = WriteConcern.Default): Future[OperationSuccess.type] =
     remove($id(id), writeConcern)
 
-  def remove(query: BSONDocument, writeConcern: WriteConcern = WriteConcern.Default): Future[OperationSuccess.type] =
+  def remove(selector: BSONDocument, writeConcern: WriteConcern = WriteConcern.Default): Future[OperationSuccess.type] =
     for {
       instance <- collection.instance()
-      result <- track(instance.remove(query, writeConcern))
+      result <- track(instance.remove(selector, writeConcern))
     } yield result
 
   def drop: Future[Boolean] =
@@ -127,6 +127,18 @@ abstract class ReactiveRepository[A <: Any](
       instance <- collection.instance()
       result <- instance.bulkInsert(entities.map(entityWriter.write(_)).toStream, false)
     } yield result
+
+  def updateById(id: ID, entity: A)(implicit ec: ExecutionContext): Future[Option[A]] =
+    updateBy($id(id), entity)
+
+  def updateBy(selector: BSONDocument, entity: A): Future[Option[A]] =
+    updateBy(selector, entityWriter.write(entity))
+
+  def updateBy(selector: BSONDocument, modifier: BSONDocument): Future[Option[A]] =
+    for {
+      instance <- collection.instance()
+      result <- instance.findAndModify(selector, instance.updateModifier(modifier, true)).map(_.value)
+    } yield result.map(_.as[A])
 
   private def ensureIndex(index: Index): Future[OperationSuccess.type] =
     for {

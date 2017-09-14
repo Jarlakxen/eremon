@@ -63,6 +63,18 @@ class RepositorySpec extends Spec
     testRepository.insert(entity).futureValue shouldBe entity
     testRepository.findOne(criteria[Test](_.name) === "Linus Torvalds").futureValue shouldBe Some(Test("Linus Torvalds", 47, id))
   }
+
+  it should "support update an entity" in {
+    import Typed._
+    val id = ID.generate()
+    val entity = Test("Linus Torvalds", 46, id)
+    testRepository.insert(entity).futureValue shouldBe entity
+    testRepository.count.futureValue shouldBe 1
+    testRepository.updateById(id, entity.copy(age = 47)).futureValue shouldBe Some(entity.copy(age = 47))
+    testRepository.count.futureValue shouldBe 1
+    testRepository.updateBy(criteria[Test](_.name) === "Linus Torvalds", entity).futureValue shouldBe Some(entity)
+    testRepository.count.futureValue shouldBe 1
+  }
 }
 
 object RepositorySpec {
