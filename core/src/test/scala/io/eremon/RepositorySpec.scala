@@ -35,6 +35,9 @@ class RepositorySpec extends Spec
 
   }
 
+  val id = ID.generate()
+  val entity = Test("Linus Torvalds", 47, Set("Linux"), id)
+
   "mongodb node" should "be ready with log line checker" in {
     isContainerReady(mongodbContainer).futureValue shouldBe true
     mongodbContainer.getPorts().futureValue.get(27017) should not be empty
@@ -42,15 +45,11 @@ class RepositorySpec extends Spec
   }
 
   "A ReactiveRepository" should "support insertion and find by id" in {
-    val id = ID.generate()
-    val entity = Test("Linus Torvalds", 47, id)
     testRepository.insert(entity).futureValue shouldBe entity
-    testRepository.findById(id).futureValue shouldBe Some(Test("Linus Torvalds", 47, id))
+    testRepository.findById(id).futureValue shouldBe Some(entity)
   }
 
   it should "support deletion" in {
-    val id = ID.generate()
-    val entity = Test("Linus Torvalds", 47, id)
     testRepository.insert(entity).futureValue shouldBe entity
     testRepository.removeById(id).futureValue shouldBe OperationSuccess
     testRepository.findById(id).futureValue shouldBe None
@@ -58,22 +57,27 @@ class RepositorySpec extends Spec
 
   it should "support find by a field" in {
     import Typed._
-    val id = ID.generate()
-    val entity = Test("Linus Torvalds", 47, id)
     testRepository.insert(entity).futureValue shouldBe entity
-    testRepository.findOne(criteria[Test](_.name) === "Linus Torvalds").futureValue shouldBe Some(Test("Linus Torvalds", 47, id))
+    testRepository.findOne(criteria[Test](_.name) === "Linus Torvalds").futureValue shouldBe Some(entity)
   }
 
   it should "support update an entity" in {
     import Typed._
-    val id = ID.generate()
-    val entity = Test("Linus Torvalds", 46, id)
     testRepository.insert(entity).futureValue shouldBe entity
     testRepository.count.futureValue shouldBe 1
-    testRepository.updateById(id, entity.copy(age = 47)).futureValue shouldBe Some(entity.copy(age = 47))
+    testRepository.updateById(id, entity.copy(age = 46)).futureValue shouldBe Some(entity.copy(age = 46))
     testRepository.count.futureValue shouldBe 1
     testRepository.updateBy(criteria[Test](_.name) === "Linus Torvalds", entity).futureValue shouldBe Some(entity)
     testRepository.count.futureValue shouldBe 1
+  }
+
+  it should "support $push to an entity" in {
+    import Typed._
+    testRepository.insert(entity).futureValue shouldBe entity
+    testRepository.count.futureValue shouldBe 1
+    testRepository.updateById(id, $push("softwares", "Git")).futureValue shouldBe Some(entity.copy(softwares = Set("Linux", "Git")))
+    testRepository.count.futureValue shouldBe 1
+    testRepository.findById(id).futureValue shouldBe Some(entity.copy(softwares = Set("Linux", "Git")))
   }
 }
 
@@ -81,7 +85,7 @@ object RepositorySpec {
   import reactivemongo.bson._
   import reactivemongo.bson.Macros.Annotations._
 
-  case class Test(name: String, age: Int, @Key("_id") id: ID = ID.generate())
+  case class Test(name: String, age: Int, softwares: Set[String], @Key("_id") id: ID = ID.generate())
 
   implicit val testReader: BSONDocumentReader[Test] = Macros.reader[Test]
   implicit val testWriter: BSONDocumentWriter[Test] = Macros.writer[Test]

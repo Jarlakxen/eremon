@@ -131,8 +131,14 @@ abstract class ReactiveRepository[A <: Any](
   def updateById(id: ID, entity: A)(implicit ec: ExecutionContext): Future[Option[A]] =
     updateBy($id(id), entity)
 
+  def updateById(id: ID, op: UpdateOperation): Future[Option[A]] =
+    updateBy($id(id), op.toDocument)
+
   def updateBy(selector: BSONDocument, entity: A): Future[Option[A]] =
     updateBy(selector, entityWriter.write(entity))
+
+  def updateBy(selector: BSONDocument, op: UpdateOperation): Future[Option[A]] =
+    updateBy(selector, op.toDocument)
 
   def updateBy(selector: BSONDocument, modifier: BSONDocument): Future[Option[A]] =
     for {
