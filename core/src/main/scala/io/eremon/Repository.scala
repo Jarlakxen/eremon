@@ -128,7 +128,7 @@ abstract class ReactiveRepository[A <: Any](
       result <- instance.bulkInsert(entities.map(entityWriter.write(_)).toStream, false)
     } yield result
 
-  def updateById(id: ID, entity: A)(implicit ec: ExecutionContext): Future[Option[A]] =
+  def updateById(id: ID, entity: A): Future[Option[A]] =
     updateBy($id(id), entity)
 
   def updateById(id: ID, op: UpdateOperation): Future[Option[A]] =
