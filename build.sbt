@@ -70,12 +70,12 @@ lazy val commonSettings = Seq(
 )
 
 // ··· Project Dependancies ···
-val reactivemongoV  = "0.12.6"
+val reactivemongoV  = "0.12.7"
 val circeV          = "0.8.0"
 val slf4JV          = "1.7.25"
 val vLogback        = "1.2.3"
-val vDockerKit      = "0.9.5"
-val scalatestV     	= "3.0.4"
+val vDockerKit      = "0.9.6"
+val scalatestV      = "3.0.4"
 
 val reactiveMongoDependancies =  Seq(
   "org.reactivemongo"     %% "reactivemongo"                      % reactivemongoV    % "provided"
