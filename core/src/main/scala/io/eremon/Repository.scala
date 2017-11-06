@@ -33,8 +33,6 @@ abstract class ReactiveRepository[A <: Any](
 
   def indexes: Seq[Index] = Seq.empty
 
-  protected def $id(id: ID) = BSONDocument(Id -> id)
-
   def find(selector: BSONDocument, opt: QueryOpt, sorting: BSONDocument): Future[List[A]] =
     find(selector, Some(opt), sorting, None)
 
@@ -140,6 +138,9 @@ abstract class ReactiveRepository[A <: Any](
   def updateBy(selector: BSONDocument, op: UpdateOperation): Future[Option[A]] =
     updateBy(selector, op.toDocument)
 
+  def updateById(id: ID, modifier: BSONDocument): Future[Option[A]] =
+    updateBy($id(id), modifier)
+
   def updateBy(selector: BSONDocument, modifier: BSONDocument): Future[Option[A]] =
     for {
       instance <- collection.instance()
@@ -179,6 +180,8 @@ abstract class ReactiveRepository[A <: Any](
 object ReactiveRepository {
   protected val Id = "_id"
   protected val DuplicateKeyError = "E11000"
+
+  def $id(id: ID) = BSONDocument(Id -> id)
 
   class BulkInsertRejected extends Exception("No objects inserted. Error converting some or all to JSON")
 
