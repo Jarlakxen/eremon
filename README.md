@@ -1,9 +1,80 @@
 Easy REactive MONgo ( EREMON )
 ======================
 
-This project ....
+This project is build on top of [ReactiveMongo](https://github.com/ReactiveMongo/ReactiveMongo) to provide an easy "DAO"/"Repository" oriented solution. I use the Criteria DSL from [ReactiveMongo-Criteria](https://github.com/osxhacker/ReactiveMongo-Criteria)
 
-## Overview
+## Quick start
+
+### SBT
+
+In your `build.sbt`, add the following entries:
+
+```scala
+resolvers += Resolver.bintrayRepo("jarlakxen", "maven")
+
+libraryDependencies += "org.reactivemongo" %% "reactivemongo" % "0.12.6"
+libraryDependencies += "io.eremon" %% "eremon-core" % "1.7.0"
+```
+
+### Repository
+
+#### Define a repository
+
+```scala
+  import io.eremon._
+  import reactivemongo.api.indexes._
+  import reactivemongo.bson._
+  import reactivemongo.bson.Macros.Annotations._
+
+   case class User(name: String, age: Int, software: Set[String], @Key("_id") id: ID = ID.generate())
+
+   implicit val userReader: BSONDocumentReader[User] = Macros.reader[User]
+   implicit val userWriter: BSONDocumentWriter[User] = Macros.writer[User]
+
+   class UserRepository(database: MongoDB)(implicit ec: ExecutionContext) extends ReactiveRepository[User](
+     database,
+     "User",
+     testReader,
+     testWriter,
+     ec) {
+
+       override def indexes: Seq[Index] = Seq(
+          Index(Seq("name" -> IndexType.Ascending), unique = true)
+        )
+      }
+
+   }
+```
+
+#### Create a new instance of a repository
+```scala
+  import io.eremon._
+  import scala.concurrent.ExecutionContext.Implicits.global
+  
+  val mongoUri = s"mongodb://<host>:<port>/test-db"
+  
+  val database: MongoDB = MongoConnector(mongoUri)
+  
+  val repository = new UserRepository(database)
+```
+
+#### Methods
+
+```scala
+  val id = ID.generate()
+  val entity = Test("Linus Torvalds", 47, Set("Linux"), id)
+  
+  repository.insert(entity)
+  repository.findById(id)
+  repository.findAll()
+  repository.removeById(id)
+  repository.findOne(criteria[User](_.name) === "Linus Torvalds")
+  repository.count
+  repository.updateById(id, entity.copy(age = 46))
+  repository.updateBy(criteria[User](_.name) === "Linus Torvalds", entity)
+```
+
+See more example in the [tests](https://github.com/fravega/eremon/tree/master/core/src/test/scala/io/eremon).
 
 ### Criteria DSL
 
