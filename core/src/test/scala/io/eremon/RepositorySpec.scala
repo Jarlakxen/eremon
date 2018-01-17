@@ -49,6 +49,13 @@ class RepositorySpec extends Spec
     testRepository.findById(id).futureValue shouldBe Some(entity)
   }
 
+  it should "support bulk insert" in {
+    val otherEntity = Test("Richard Stallman ", 64, Set("GNU"), ID.generate())
+    testRepository.bulkInsert(List(entity, otherEntity)).map(_.n).futureValue shouldBe 2
+    testRepository.count.futureValue shouldBe 2
+    testRepository.findAll().futureValue shouldBe List(entity, otherEntity)
+  }
+
   it should "support deletion" in {
     testRepository.insert(entity).futureValue shouldBe entity
     testRepository.removeById(id).futureValue shouldBe OperationSuccess
@@ -85,6 +92,14 @@ class RepositorySpec extends Spec
     testRepository.updateById(id, $pull("softwares", "Linux")).futureValue shouldBe Some(entity.copy(softwares = Set.empty))
     testRepository.count.futureValue shouldBe 1
     testRepository.findById(id).futureValue shouldBe Some(entity.copy(softwares = Set.empty))
+  }
+
+  it should "support multi update operation to an entity" in {
+    testRepository.insert(entity).futureValue shouldBe entity
+    testRepository.count.futureValue shouldBe 1
+    testRepository.updateById(id, $set("name", "Linus"), $set("age", 48)).futureValue shouldBe Some(entity.copy(name = "Linus", age = 48))
+    testRepository.count.futureValue shouldBe 1
+    testRepository.findById(id).futureValue shouldBe Some(entity.copy(name = "Linus", age = 48))
   }
 }
 

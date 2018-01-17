@@ -33,6 +33,12 @@ abstract class ReactiveRepository[A <: Any](
 
   def indexes: Seq[Index] = Seq.empty
 
+  def find(selector: BSONDocument): Future[List[A]] =
+    find(selector, None, BSONDocument.empty, None)
+
+  def find(selector: BSONDocument, opt: QueryOpt): Future[List[A]] =
+    find(selector, Some(opt), BSONDocument.empty, None)
+
   def find(selector: BSONDocument, opt: QueryOpt, sorting: BSONDocument): Future[List[A]] =
     find(selector, Some(opt), sorting, None)
 
@@ -123,14 +129,14 @@ abstract class ReactiveRepository[A <: Any](
   def bulkInsert(entities: Traversable[A]): Future[MultiBulkWriteResult] =
     for {
       instance <- collection.instance()
-      result <- instance.bulkInsert(entities.map(entityWriter.write(_)).toStream, false)
+      result <- instance.insert[BSONDocument](true).many(entities.map(entityWriter.write(_)).toIterable)
     } yield result
 
   def updateById(id: ID, entity: A): Future[Option[A]] =
     updateBy($id(id), entity)
 
-  def updateById(id: ID, op: UpdateOperation): Future[Option[A]] =
-    updateBy($id(id), op.toDocument)
+  def updateById(id: ID, ops: UpdateOperation*): Future[Option[A]] =
+    updateBy($id(id), ops.map(_.toDocument).foldLeft(BSONDocument.empty)(_ ++ _))
 
   def updateBy(selector: BSONDocument, entity: A): Future[Option[A]] =
     updateBy(selector, entityWriter.write(entity))
