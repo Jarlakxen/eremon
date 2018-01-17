@@ -13,7 +13,7 @@ In your `build.sbt`, add the following entries:
 resolvers += Resolver.bintrayRepo("jarlakxen", "maven")
 
 libraryDependencies += "org.reactivemongo" %% "reactivemongo" % "0.12.6"
-libraryDependencies += "io.eremon" %% "eremon-core" % "1.7.0"
+libraryDependencies += "io.eremon" %% "eremon-core" % "1.8.0"
 ```
 
 ### Repository
